@@ -1,7 +1,7 @@
 name: pusher_client
 description: |
   A Pusher Channels client plugin for Flutter targeting Android and iOS. It 
-  wraps pusher-websocket-java v2.2.5 and PusherSwift v10.1.0.
+  wraps pusher-websocket-java v2.2.9 and PusherSwift v9.1.0.
 version: 1.0.0
 homepage: https://github.com/modtwentyfour/pusher_client
 documentation: https://github.com/modtwentyfour/pusher_client/blob/master/README.md
