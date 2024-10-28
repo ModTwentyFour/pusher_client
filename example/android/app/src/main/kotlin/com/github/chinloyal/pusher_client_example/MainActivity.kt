@@ -1,4 +1,4 @@
-package com.github.chinloyal.pusher_client_example
+package com.github.modtwentyfour.pusher_client_example
 
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity

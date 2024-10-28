@@ -8,20 +8,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:pusher_client_example/main.dart';
+import '../lib/main.dart';
 
 void main() {
   testWidgets('Verify Platform version', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp());
+    await tester.pumpWidget(const MyApp());
 
-    // Verify that platform version is retrieved.
-    expect(
-      find.byWidgetPredicate(
-        (Widget widget) => widget is Text &&
-                           widget.data.startsWith('Running on:'),
-      ),
-      findsOneWidget,
-    );
+    final MyAppState myAppState =
+    tester.state(find.byType(MyApp));
+
+    expect(myAppState.channel.name, 'private-orders');
+
+    await tester.tap(find.byKey(Key('SB')));
+    await tester.pump();
+
+    expect(myAppState.newSubscription.name, 'private-product');
   });
 }

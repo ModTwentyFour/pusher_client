@@ -1,12 +1,12 @@
 # Pusher Channels Flutter Client
 
 [![pub version](https://img.shields.io/pub/v/pusher_client.svg?logo=dart)](https://pub.dartlang.org/packages/pusher_client)
-[![GitHub license](https://img.shields.io/badge/license-MIT-lightgrey.svg)](https://raw.githubusercontent.com/chinloyal/pusher_client/master/LICENSE)
+[![GitHub license](https://img.shields.io/badge/license-MIT-lightgrey.svg)](https://raw.githubusercontent.com/modtwentyfour/pusher_client/master/LICENSE)
 ![Languages](https://img.shields.io/badge/languages-dart%20%7C%20kotlin%20%7C%20swift-blueviolet.svg)
-[![Twitter](https://img.shields.io/badge/twitter-@chinloyal-blue.svg?style=flat&logo=twitter)](https://twitter.com/chinloyal)
+[![Twitter](https://img.shields.io/badge/twitter-@modtwentyfour-blue.svg?style=flat&logo=twitter)](https://twitter.com/modtwentyfour)
 
 A Pusher Channels client plugin for Flutter targeting Android and iOS. It wraps
-[pusher-websocket-java](https://github.com/pusher/pusher-websocket-java) v2.2.5 and [pusher-websocket-swift](https://github.com/pusher/pusher-websocket-swift) v8.0.0.
+[pusher-websocket-java](https://github.com/pusher/pusher-websocket-java) v2.4.4 and [pusher-websocket-swift](https://github.com/pusher/pusher-websocket-swift) v9.0.0.
 
 For tutorials and more in-depth information about Pusher Channels, visit the [official docs](https://pusher.com/docs/channels).
 
@@ -108,7 +108,7 @@ buildTypes {
 Then in `android/app/proguard-rules.pro`:
 
 ```pro
--keep class com.github.chinloyal.pusher_client.** { *; }
+-keep class com.github.modtwentyfour.pusher_client.** { *; }
 ```
 
 

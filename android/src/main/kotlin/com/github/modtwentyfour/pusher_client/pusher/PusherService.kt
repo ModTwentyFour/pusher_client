@@ -1,9 +1,9 @@
-package com.github.chinloyal.pusher_client.pusher
+package com.github.modtwentyfour.pusher_client.pusher
 
 import android.util.Log
-import com.github.chinloyal.pusher_client.core.contracts.MChannel
-import com.github.chinloyal.pusher_client.core.utils.JsonEncodedConnectionFactory
-import com.github.chinloyal.pusher_client.pusher.listeners.*
+import com.github.modtwentyfour.pusher_client.core.contracts.MChannel
+import com.github.modtwentyfour.pusher_client.core.utils.JsonEncodedConnectionFactory
+import com.github.modtwentyfour.pusher_client.pusher.listeners.*
 import com.google.gson.Gson
 import com.pusher.client.Pusher
 import com.pusher.client.PusherOptions
@@ -20,8 +20,8 @@ import org.json.JSONObject
 import java.lang.Exception
 
 
-const val CHANNEL_NAME = "com.github.chinloyal/pusher_client"
-const val EVENT_STREAM = "com.github.chinloyal/pusher_client_stream"
+const val CHANNEL_NAME = "com.github.modtwentyfour/pusher_client"
+const val EVENT_STREAM = "com.github.modtwentyfour/pusher_client_stream"
 const val LOG_TAG = "PusherClientPlugin"
 const val PRIVATE_PREFIX = "private-"
 const val PRIVATE_ENCRYPTED_PREFIX = "private-encrypted-"
@@ -34,13 +34,13 @@ class PusherService : MChannel {
         var enableLogging: Boolean = false
         var eventSink: EventSink? = null
         fun debugLog(msg: String) {
-            if(enableLogging) {
+            if (enableLogging) {
                 Log.d(LOG_TAG, msg)
             }
         }
 
         fun errorLog(msg: String) {
-            if(enableLogging) {
+            if (enableLogging) {
                 Log.e(LOG_TAG, msg)
             }
         }
@@ -49,7 +49,7 @@ class PusherService : MChannel {
     override fun register(messenger: BinaryMessenger) {
         MethodChannel(messenger, CHANNEL_NAME).setMethodCallHandler { call, result ->
             when (call.method) {
-                "init" ->  init(call, result)
+                "init" -> init(call, result)
                 "connect" -> connect(result)
                 "disconnect" -> disconnect(result)
                 "getSocketId" -> getSocketId(result)
@@ -80,47 +80,59 @@ class PusherService : MChannel {
         val initArgs: JSONObject = args.getJSONObject("initArgs")
         enableLogging = initArgs.getBoolean("enableLogging")
 
-        if(_pusherInstance == null) {
-            val options: JSONObject = args.getJSONObject("pusherOptions")
-            val pusherOptions = PusherOptions()
+        val options: JSONObject = args.getJSONObject("pusherOptions")
+        val pusherOptions = PusherOptions()
 
-            if (!options.isNull("auth")) {
-                val auth: JSONObject = options.getJSONObject("auth")
-                val endpoint: String = auth.getString("endpoint")
-                val headersMap: Map<String, String> = Gson().fromJson<Map<String, String>>(auth.getString("headers"), Map::class.java)
-                val encodedConnectionFactory = if (headersMap.containsValue("application/json"))
-                    JsonEncodedConnectionFactory() else UrlEncodedConnectionFactory()
+        if (!options.isNull("auth")) {
+            val auth: JSONObject = options.getJSONObject("auth")
+            val endpoint: String = auth.getString("endpoint")
 
-                val authorizer = HttpAuthorizer(endpoint,  encodedConnectionFactory)
-                authorizer.setHeaders(headersMap)
+            val jsonObj = JSONObject(auth.getString("headers"))
+            val headersMap = jsonObj.toMap()
 
-                pusherOptions.authorizer = authorizer
+            //Creates a UrlEncodedConnectionFactory with provided "params" if not null.
+            fun getUrlEncodedConnectionFactory(jsonParameters: String?): UrlEncodedConnectionFactory {
+                return if (jsonParameters == null) {
+                    UrlEncodedConnectionFactory()
+                } else {
+                    val paramsMap = JSONObject(jsonParameters).toMap()
+                    UrlEncodedConnectionFactory(paramsMap as MutableMap<String, String>?)
+                }
+
             }
 
-            pusherOptions.setHost(options.getString("host"))
+            val encodedConnectionFactory = if (headersMap.containsValue("application/json"))
+                JsonEncodedConnectionFactory() else getUrlEncodedConnectionFactory(auth.optString("params"))
 
-            if(!options.isNull("cluster")) {
-                pusherOptions.setCluster(options.getString("cluster"))
-            }
+            val authorizer = HttpAuthorizer(endpoint, encodedConnectionFactory)
+            authorizer.setHeaders(headersMap as MutableMap<String, String>?)
 
-            pusherOptions.activityTimeout = options.getLong("activityTimeout")
-            pusherOptions.pongTimeout = options.getLong("pongTimeout")
-            pusherOptions.maxReconnectionAttempts = options.getInt("maxReconnectionAttempts")
-            pusherOptions.maxReconnectGapInSeconds = options.getInt("maxReconnectGapInSeconds")
-            pusherOptions.setWsPort(options.getInt("wsPort"))
-            pusherOptions.setWssPort(options.getInt("wssPort"))
-            pusherOptions.isUseTLS = options.getBoolean("encrypted")
-
-            _pusherInstance = Pusher(args.getString("appKey"), pusherOptions)
-
-            debugLog("Pusher initialized")
+            pusherOptions.authorizer = authorizer
         }
+
+        pusherOptions.setHost(options.getString("host"))
+
+        if (!options.isNull("cluster")) {
+            pusherOptions.setCluster(options.getString("cluster"))
+        }
+
+        pusherOptions.activityTimeout = options.getLong("activityTimeout")
+        pusherOptions.pongTimeout = options.getLong("pongTimeout")
+        pusherOptions.maxReconnectionAttempts = options.getInt("maxReconnectionAttempts")
+        pusherOptions.maxReconnectGapInSeconds = options.getInt("maxReconnectGapInSeconds")
+        pusherOptions.setWsPort(options.getInt("wsPort"))
+        pusherOptions.setWssPort(options.getInt("wssPort"))
+        pusherOptions.isUseTLS = options.getBoolean("encrypted")
+
+        _pusherInstance = Pusher(args.getString("appKey"), pusherOptions)
+
+        debugLog("Pusher initialized")
 
         result.success(null)
     }
 
     private fun connect(result: Result) {
-        _pusherInstance?.connect(ConnectionListener(), ConnectionState.ALL)
+        _pusherInstance?.connect(_connectionListener, ConnectionState.ALL)
         result.success(null)
     }
 
@@ -144,22 +156,37 @@ class PusherService : MChannel {
                 channelName.startsWith(PRIVATE_ENCRYPTED_PREFIX) -> {
                     val channel = _pusherInstance?.getPrivateEncryptedChannel(channelName)
                     if (channel == null || !channel.isSubscribed)
-                        _pusherInstance?.subscribePrivateEncrypted(channelName, FlutterPrivateEncryptedChannelEventListener.instance)
+                        _pusherInstance?.subscribePrivateEncrypted(
+                            channelName,
+                            FlutterPrivateEncryptedChannelEventListener.instance
+                        )
                 }
+
                 channelName.startsWith(PRIVATE_PREFIX) -> {
                     val channel = _pusherInstance?.getPrivateChannel(channelName)
                     if (channel == null || !channel.isSubscribed)
-                        _pusherInstance?.subscribePrivate(channelName, FlutterPrivateChannelEventListener.instance)
+                        _pusherInstance?.subscribePrivate(
+                            channelName,
+                            FlutterPrivateChannelEventListener.instance
+                        )
                 }
+
                 channelName.startsWith(PRESENCE_PREFIX) -> {
                     val channel = _pusherInstance?.getPresenceChannel(channelName)
                     if (channel == null || !channel.isSubscribed)
-                        _pusherInstance?.subscribePresence(channelName, FlutterPresenceChannelEventListener.instance)
+                        _pusherInstance?.subscribePresence(
+                            channelName,
+                            FlutterPresenceChannelEventListener.instance
+                        )
                 }
+
                 else -> {
                     val channel = _pusherInstance?.getChannel(channelName)
                     if (channel == null || !channel.isSubscribed)
-                        _pusherInstance?.subscribe(channelName, FlutterChannelEventListener.instance)
+                        _pusherInstance?.subscribe(
+                            channelName,
+                            FlutterChannelEventListener.instance
+                        )
                 }
             }
 
@@ -174,7 +201,7 @@ class PusherService : MChannel {
     private fun unsubscribe(call: MethodCall, result: Result) {
         try {
             val src = call.arguments as Map<String, Any>
-            val args = JSONObject(src);
+            val args = JSONObject(src)
             val channelName = args.getString("channelName")
 
             _pusherInstance?.unsubscribe(channelName)
@@ -203,14 +230,17 @@ class PusherService : MChannel {
                     val channel = _pusherInstance?.getPrivateEncryptedChannel(channelName)
                     channel?.bind(eventName, FlutterPrivateEncryptedChannelEventListener.instance)
                 }
+
                 channelName.startsWith(PRIVATE_PREFIX) -> {
                     val channel = _pusherInstance?.getPrivateChannel(channelName)
                     channel?.bind(eventName, FlutterPrivateChannelEventListener.instance)
                 }
+
                 channelName.startsWith(PRESENCE_PREFIX) -> {
                     val channel = _pusherInstance?.getPresenceChannel(channelName)
                     channel?.bind(eventName, FlutterPresenceChannelEventListener.instance)
                 }
+
                 else -> {
                     val channel = _pusherInstance?.getChannel(channelName)
                     channel?.bind(eventName, FlutterChannelEventListener.instance)
@@ -238,14 +268,17 @@ class PusherService : MChannel {
                     val channel = _pusherInstance?.getPrivateEncryptedChannel(channelName)
                     channel?.unbind(eventName, FlutterPrivateEncryptedChannelEventListener.instance)
                 }
+
                 channelName.startsWith(PRIVATE_PREFIX) -> {
                     val channel = _pusherInstance?.getPrivateChannel(channelName)
                     channel?.unbind(eventName, FlutterPrivateChannelEventListener.instance)
                 }
+
                 channelName.startsWith(PRESENCE_PREFIX) -> {
                     val channel = _pusherInstance?.getPresenceChannel(channelName)
                     channel?.unbind(eventName, FlutterPresenceChannelEventListener.instance)
                 }
+
                 else -> {
                     val channel = _pusherInstance?.getChannel(channelName)
                     channel?.unbind(eventName, FlutterChannelEventListener.instance)
@@ -273,14 +306,17 @@ class PusherService : MChannel {
                 channelName.startsWith(PRIVATE_ENCRYPTED_PREFIX) -> {
                     result.error("TRIGGER_ERROR", errorMessage, null)
                 }
+
                 channelName.startsWith(PRIVATE_PREFIX) -> {
                     val channel = _pusherInstance?.getPrivateChannel(channelName)
                     channel?.trigger(eventName, data)
                 }
+
                 channelName.startsWith(PRESENCE_PREFIX) -> {
                     val channel = _pusherInstance?.getPresenceChannel(channelName)
                     channel?.trigger(eventName, data)
                 }
+
                 else -> result.error("TRIGGER_ERROR", errorMessage, null)
             }
 
@@ -293,4 +329,16 @@ class PusherService : MChannel {
         }
     }
 
+    private fun JSONObject.toMap(): Map<String, *> = keys().asSequence().associateWith {
+        when (val value = this[it]) {
+            is JSONArray -> {
+                val map = (0 until value.length()).associate { Pair(it.toString(), value[it]) }
+                JSONObject(map).toMap().values.toList()
+            }
+
+            is JSONObject -> value.toMap()
+            JSONObject.NULL -> null
+            else -> value
+        }
+    }
 }

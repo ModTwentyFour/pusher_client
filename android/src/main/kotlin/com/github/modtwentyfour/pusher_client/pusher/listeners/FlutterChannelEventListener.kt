@@ -1,4 +1,4 @@
-package com.github.chinloyal.pusher_client.pusher.listeners
+package com.github.modtwentyfour.pusher_client.pusher.listeners
 
 class FlutterChannelEventListener: FlutterBaseChannelEventListener() {
     companion object {

@@ -1,4 +1,4 @@
-package com.github.chinloyal.pusher_client.core.contracts
+package com.github.modtwentyfour.pusher_client.core.contracts
 
 import androidx.annotation.NonNull
 import io.flutter.plugin.common.BinaryMessenger

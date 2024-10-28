@@ -2,7 +2,7 @@
 //  Models.swift
 //  pusher_client
 //
-//  Created by Romario Chinloy on 10/27/20.
+//  Updated by Ivan Krkotic on 10/28/24.
 //
 
 struct PusherArgs: Codable {
@@ -26,7 +26,7 @@ struct PusherOptions: Codable {
 
 struct PusherAuth: Codable {
     var endpoint: String
-    var headers: [String: String]
+    var params: [String: String]?
 }
 
 struct InitArgs: Codable {

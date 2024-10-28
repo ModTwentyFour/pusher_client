@@ -1,11 +1,11 @@
-package com.github.chinloyal.pusher_client.pusher.listeners
+package com.github.modtwentyfour.pusher_client.pusher.listeners
 
 import android.os.Handler
 import android.os.Looper
-import com.github.chinloyal.pusher_client.pusher.PusherService
-import com.github.chinloyal.pusher_client.pusher.PusherService.Companion.debugLog
-import com.github.chinloyal.pusher_client.pusher.PusherService.Companion.enableLogging
-import com.github.chinloyal.pusher_client.pusher.PusherService.Companion.errorLog
+import com.github.modtwentyfour.pusher_client.pusher.PusherService
+import com.github.modtwentyfour.pusher_client.pusher.PusherService.Companion.debugLog
+import com.github.modtwentyfour.pusher_client.pusher.PusherService.Companion.enableLogging
+import com.github.modtwentyfour.pusher_client.pusher.PusherService.Companion.errorLog
 import com.pusher.client.connection.ConnectionEventListener
 import com.pusher.client.connection.ConnectionStateChange
 import org.json.JSONObject

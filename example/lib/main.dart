@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pusher_client/pusher_client.dart';
 
 void main() {
@@ -8,13 +9,17 @@ void main() {
 }
 
 class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
   @override
-  _MyAppState createState() => _MyAppState();
+  MyAppState createState() => MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
-  PusherClient pusher;
-  Channel channel;
+@visibleForTesting
+class MyAppState extends State<MyApp> {
+  late PusherClient pusher;
+  late Channel channel;
+  late Channel newSubscription;
 
   @override
   void initState() {
@@ -23,7 +28,7 @@ class _MyAppState extends State<MyApp> {
     String token = getToken();
 
     pusher = new PusherClient(
-      "app-key",
+      'app-key',
       PusherOptions(
         // if local on android use 10.0.2.2
         host: 'localhost',
@@ -38,26 +43,27 @@ class _MyAppState extends State<MyApp> {
       enableLogging: true,
     );
 
-    channel = pusher.subscribe("private-orders");
+    channel = pusher.subscribe('private-orders');
 
     pusher.onConnectionStateChange((state) {
-      log("previousState: ${state.previousState}, currentState: ${state.currentState}");
+      if (state == null) return;
+      log('previousState: ${state.previousState}, currentState: ${state.currentState}');
     });
 
     pusher.onConnectionError((error) {
-      log("error: ${error.message}");
+      log('error: ${error!.message}');
     });
 
     channel.bind('status-update', (event) {
-      log(event.data);
+      log(event!.data!);
     });
 
     channel.bind('order-filled', (event) {
-      log("Order Filled Event" + event.data.toString());
+      log('Order Filled Event' + event!.data.toString());
     });
   }
 
-  String getToken() => "super-secret-token";
+  String getToken() => 'super-secret-token';
 
   @override
   Widget build(BuildContext context) {
@@ -90,10 +96,24 @@ class _MyAppState extends State<MyApp> {
             ElevatedButton(
               child: Text('Bind Status Update'),
               onPressed: () {
-                channel.bind('status-update', (PusherEvent event) {
-                  log("Status Update Event" + event.data.toString());
+                channel.bind('status-update', (PusherEvent? event) {
+                  log('Status Update Event' + event!.data.toString());
                 });
               },
+            ),
+            ElevatedButton(
+              key: Key('SB'),
+              child: Text('Subscribe to products'),
+              onPressed: () {
+                newSubscription = pusher.subscribe('private-product');
+              },
+            ),
+            Column(
+              key: Key('C'),
+              children: [
+                Text('Subscribed channel'),
+                TextField()
+              ],
             ),
             ElevatedButton(
               child: Text('Trigger Client Typing'),

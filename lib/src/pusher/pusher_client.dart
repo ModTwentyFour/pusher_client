@@ -18,7 +18,7 @@ part 'pusher_client.g.dart';
 /// `connect()` at a later point.
 class PusherClient extends StreamHandler {
   static const MethodChannel _channel =
-      const MethodChannel('com.github.chinloyal/pusher_client');
+      const MethodChannel('com.github.modtwentyfour/pusher_client');
   static const classId = 'PusherClient';
 
   static PusherClient? _singleton;
@@ -57,7 +57,6 @@ class PusherClient extends StreamHandler {
   }
 
   Future _init(String appKey, PusherOptions options, InitArgs initArgs) async {
-    registerListener(classId, _eventHandler);
     await _channel.invokeMethod(
       'init',
       jsonEncode({
@@ -89,6 +88,8 @@ class PusherClient extends StreamHandler {
   /// Initiates a connection attempt using the client's
   /// existing connection details
   Future connect() async {
+    registerListener(classId, _eventHandler);
+
     await _channel.invokeMethod('connect');
   }
 

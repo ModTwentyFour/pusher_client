@@ -2,15 +2,15 @@
 //  PusherService.swift
 //  pusher_client
 //
-//  Created by Romario Chinloy on 10/26/20.
+//  Updated by Ivan Krkotic on 10/28/24.
 //
 
 import Flutter
-import PusherSwiftWithEncryption
+import PusherSwiftWith
 
 class PusherService: MChannel {
-    static let CHANNEL_NAME = "com.github.chinloyal/pusher_client"
-    static let EVENT_STREAM = "com.github.chinloyal/pusher_client_stream"
+    static let CHANNEL_NAME = "com.github.modtwentyfour/pusher_client"
+    static let EVENT_STREAM = "com.github.modtwentyfour/pusher_client_stream"
     static let LOG_TAG = "PusherClientPlugin"
     static let PRIVATE_PREFIX = "private-"
     static let PRIVATE_ENCRYPTED_PREFIX = "private-encrypted-"
@@ -73,25 +73,24 @@ class PusherService: MChannel {
             
             Utils.enableLogging = pusherArgs.initArgs.enableLogging
             
-            if(_pusherInstance == nil) {
-                let pusherOptions = PusherClientOptions(
-                    authMethod: pusherArgs.pusherOptions.auth == nil ? .noMethod : AuthMethod.authRequestBuilder(authRequestBuilder: AuthRequestBuilder(pusherAuth: pusherArgs.pusherOptions.auth!)),
-                    host: pusherArgs.pusherOptions.cluster != nil ? .cluster(pusherArgs.pusherOptions.cluster!) : .host(pusherArgs.pusherOptions.host),
-                    port: pusherArgs.pusherOptions.encrypted ? pusherArgs.pusherOptions.wssPort : pusherArgs.pusherOptions.wsPort,
-                    useTLS: pusherArgs.pusherOptions.encrypted,
-                    activityTimeout: Double(pusherArgs.pusherOptions.activityTimeout) / 1000
-                    
-                )
-                
-                _pusherInstance = Pusher(key: pusherArgs.appKey, options: pusherOptions)
-                _pusherInstance.connection.reconnectAttemptsMax = pusherArgs.pusherOptions.maxReconnectionAttempts
-                _pusherInstance.connection.maxReconnectGapInSeconds = Double(pusherArgs.pusherOptions.maxReconnectGapInSeconds)
-                _pusherInstance.connection.pongResponseTimeoutInterval = Double(pusherArgs.pusherOptions.pongTimeout) / 1000
-                _pusherInstance.connection.delegate = ConnectionListener.default
-                Utils.debugLog(msg: "Pusher initialized")
-                
-                result(nil)
-            }
+
+            let pusherOptions = PusherClientOptions(
+                authMethod: pusherArgs.pusherOptions.auth == nil ? .noMethod : AuthMethod.authRequestBuilder(authRequestBuilder: AuthRequestBuilder(pusherAuth: pusherArgs.pusherOptions.auth!)),
+                host: pusherArgs.pusherOptions.cluster != nil ? .cluster(pusherArgs.pusherOptions.cluster!) : .host(pusherArgs.pusherOptions.host),
+                port: pusherArgs.pusherOptions.encrypted ? pusherArgs.pusherOptions.wssPort : pusherArgs.pusherOptions.wsPort,
+                useTLS: pusherArgs.pusherOptions.encrypted,
+                activityTimeout: Double(pusherArgs.pusherOptions.activityTimeout) / 1000
+
+            )
+
+            _pusherInstance = Pusher(key: pusherArgs.appKey, options: pusherOptions)
+            _pusherInstance.connection.reconnectAttemptsMax = pusherArgs.pusherOptions.maxReconnectionAttempts
+            _pusherInstance.connection.maxReconnectGapInSeconds = Double(pusherArgs.pusherOptions.maxReconnectGapInSeconds)
+            _pusherInstance.connection.pongResponseTimeoutInterval = Double(pusherArgs.pusherOptions.pongTimeout) / 1000
+            _pusherInstance.connection.delegate = ConnectionListener.default
+            Utils.debugLog(msg: "Pusher initialized")
+
+            result(nil)
         } catch let err {
             Utils.errorLog(msg: err.localizedDescription)
             result(FlutterError(code: "INIT_ERROR", message: err.localizedDescription, details: err))
@@ -122,7 +121,15 @@ class PusherService: MChannel {
         if(!channelName.starts(with: PusherService.PRESENCE_PREFIX)) {
             channel = _pusherInstance.subscribe(channelName)
         } else {
-            channel = _pusherInstance.subscribeToPresenceChannel(channelName: channelName)
+            channel = _pusherInstance.subscribeToPresenceChannel(
+                channelName: channelName,
+                onMemberAdded: { (member: PusherPresenceChannelMember) in
+                    ChannelEventListener.default.onMemberAdded(channelName: channelName, member: member)
+                },
+                onMemberRemoved: { (member: PusherPresenceChannelMember) in
+                    ChannelEventListener.default.onMemberRemoved(channelName: channelName, member: member)
+                }
+            )
             for pEvent in Constants.PresenceEvents.allCases {
                 channel.bind(eventName: pEvent.rawValue, eventCallback: ChannelEventListener.default.onEvent)
             }
@@ -156,10 +163,18 @@ class PusherService: MChannel {
         var channel: PusherChannel
         
         if(!channelName.starts(with: PusherService.PRESENCE_PREFIX)) {
-            channel = _pusherInstance.connection.channels.find(name: channelName)!
+            guard let channel = _pusherInstance.connection.channels.find(name: channelName) else {
+                Utils.debugLog(msg: "[BIND] failed to find channel \(eventName)")
+                result(nil)
+                return
+            }
             bindedEvents[channelName + eventName] = channel.bind(eventName: eventName, eventCallback: ChannelEventListener.default.onEvent)
         } else {
-            channel = _pusherInstance.connection.channels.findPresence(name: channelName)!
+            guard let channel = _pusherInstance.connection.channels.findPresence(name: channelName) else {
+                Utils.debugLog(msg: "[BIND] failed to find channel \(eventName)")
+                result(nil)
+                return
+            }
             bindedEvents[channelName + eventName] = channel.bind(eventName: eventName, eventCallback: ChannelEventListener.default.onEvent)
         }
         
@@ -176,10 +191,18 @@ class PusherService: MChannel {
         
         if(callBackId != nil) {
             if(!channelName.starts(with: PusherService.PRESENCE_PREFIX)) {
-                channel = _pusherInstance.connection.channels.find(name: channelName)!
+                guard let channel = _pusherInstance.connection.channels.find(name: channelName) else {
+                    Utils.debugLog(msg: "[UNBIND] failed to find channel \(eventName)")
+                    result(nil)
+                    return
+                }
                 channel.unbind(eventName: eventName, callbackId: callBackId!)
             } else {
-                channel = _pusherInstance.connection.channels.findPresence(name: channelName)!
+                guard let channel = _pusherInstance.connection.channels.findPresence(name: channelName) else {
+                    Utils.debugLog(msg: "[UNBIND] failed to find channel \(eventName)")
+                    result(nil)
+                    return
+                }
                 channel.unbind(eventName: eventName, callbackId: callBackId!)
             }
         }

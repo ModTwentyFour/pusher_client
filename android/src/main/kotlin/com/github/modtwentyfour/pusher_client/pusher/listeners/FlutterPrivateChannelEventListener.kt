@@ -1,9 +1,9 @@
-package com.github.chinloyal.pusher_client.pusher.listeners
+package com.github.modtwentyfour.pusher_client.pusher.listeners
 
-import com.github.chinloyal.pusher_client.core.utils.Constants
-import com.github.chinloyal.pusher_client.pusher.PusherService
-import com.github.chinloyal.pusher_client.pusher.PusherService.Companion.enableLogging
-import com.github.chinloyal.pusher_client.pusher.PusherService.Companion.errorLog
+import com.github.modtwentyfour.pusher_client.core.utils.Constants
+import com.github.modtwentyfour.pusher_client.pusher.PusherService
+import com.github.modtwentyfour.pusher_client.pusher.PusherService.Companion.enableLogging
+import com.github.modtwentyfour.pusher_client.pusher.PusherService.Companion.errorLog
 import com.pusher.client.channel.PrivateChannelEventListener
 import com.pusher.client.channel.PusherEvent
 import java.lang.Exception
